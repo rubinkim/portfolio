@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>사주 보기</title>
+</head>
+<body>
+  <h1>사주 보기</h1>
+
+  <form id="saju-form">
+    <label>이름 <input type="text" name="name" required></label><br>
+    <label>생년월일
+      <select name="birth_year" id="birth_year" required></select>년
+      <select name="birth_month" id="birth_month" required></select>월
+      <select name="birth_day" id="birth_day" required></select>일
+    </label><br>
+    <label>태어난 시간 <input type="time" name="birth_time"></label><br>
+    <label>성별
+      <select name="gender">
+        <option value="남">남</option>
+        <option value="여">여</option>
+      </select>
+    </label><br>
+    <button type="submit">사주 보기</button>
+  </form>
+
+  <pre id="result"></pre>
+
+  <script>
+    const form = document.getElementById("saju-form");
+    const resultEl = document.getElementById("result");
+
+    // 나이 많은 사용자도 편하게 고를 수 있도록 년/월/일을 드롭다운으로 분리.
+    const yearSelect = document.getElementById("birth_year");
+    const monthSelect = document.getElementById("birth_month");
+    const daySelect = document.getElementById("birth_day");
+
+    const currentYear = new Date().getFullYear();
+    for (let y = currentYear; y >= currentYear - 100; y--) {
+      yearSelect.add(new Option(y, y));
+    }
+    for (let m = 1; m <= 12; m++) {
+      monthSelect.add(new Option(m, m));
+    }
+    for (let d = 1; d <= 31; d++) {
+      daySelect.add(new Option(d, d));
+    }
+
+    const pad = (n) => String(n).padStart(2, "0");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      payload.birth_date = `${payload.birth_year}-${pad(payload.birth_month)}-${pad(payload.birth_day)}`;
+      delete payload.birth_year;
+      delete payload.birth_month;
+      delete payload.birth_day;
+
+      resultEl.textContent = "확인 중...";
+
+      try {
+        const res = await fetch("/api/saju", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        resultEl.textContent = data.result ?? data.error ?? "오류가 발생했습니다.";
+      } catch (err) {
+        resultEl.textContent =
+          "서버에 연결할 수 없습니다. saju.html 파일을 직접 열지 말고, " +
+          "python app.py 실행 후 http://127.0.0.1:5000 으로 접속하세요.\n\n" +
+          err;
+      }
+    });
+  </script>
+</body>
+</html>
